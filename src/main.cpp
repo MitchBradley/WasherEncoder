@@ -1,5 +1,11 @@
 #include <Arduino.h>
 #include <Esp.h>
+#include <Wire.h>
+#include <Adafruit_MCP23X08.h>
+
+Adafruit_MCP23X08 mcp;
+
+const uint8_t MCP_ADDR = 0x25;
 
 const int ledPin = LED_BUILTIN; // GPIO2 on ESP8266 boards
 
@@ -12,44 +18,64 @@ const int pin1 = 13;
 bool previousButtonState = LOW;
 int sequenceNumber = 0;
 int sequence[10] = {
-    0,  // Quick wash
-    9,  // Delicates
-    8,  // Cold wash
-    10, // Rinse
+    1,  // Cold wash
+    3,  // Rinse
     11, // Self clean
-    3,  // Sanitize
+    10, // Sanitize
     2,  // Bulky
     6,  // Towels
-    7,  // Whites
+    14, // Whites
     15, // Normal
+    4,  // Quick wash
+    9,  // Delicates
 };
-void setState(int state)
+void setState(uint8_t relays, uint8_t leds = 0)
 {
-  int value = sequence[state];
-  digitalWrite(pin8, value & 8 ? HIGH : LOW);
-  digitalWrite(pin4, value & 4 ? HIGH : LOW);
-  digitalWrite(pin2, value & 2 ? HIGH : LOW);
-  digitalWrite(pin1, value & 1 ? HIGH : LOW);
+  uint8_t value = (relays << 3) | leds;
+  Serial.println("Setting state to: " + String(value, BIN));
+  mcp.writeGPIO(value, 0);
 }
 void advance()
 {
-  sequenceNumber = (sequenceNumber + 1) % 10;
-  Serial.print("Washing machine set to sequence: ");
-  Serial.println(sequence[sequenceNumber]);
+  ++sequenceNumber;
+#if 1
+  sequenceNumber %= 10;
+  setState(sequence[sequenceNumber]);
+#else
+  sequenceNumber %= 16;
   setState(sequenceNumber);
+#endif
 }
 void setup()
 {
   pinMode(ledPin, OUTPUT);
   Serial.begin(115200);
+  Serial.println();
+  Serial.println("Washer Encoder Starting...");
   pinMode(buttonPin, INPUT);
-  pinMode(pin8, OUTPUT);
-  pinMode(pin4, OUTPUT);
-  pinMode(pin2, OUTPUT);
-  pinMode(pin1, OUTPUT);
+  for (uint8_t addr = 0x20; addr <= 0x28; addr++)
+  {
+    if (mcp.begin_I2C(addr))
+    {
+      Serial.println("Found MCP23008 at address 0x" + String(MCP_ADDR, HEX));
+      break;
+    }
+    if (addr == 0x28)
+    {
+      Serial.println("Could not find MCP23008.");
+      while (1)
+        yield();
+    }
+    yield();
+  }
+  for (int i = 0; i < 8; i++)
+  {
+    mcp.pinMode(i, OUTPUT);
+  }
+  digitalWrite(ledPin, HIGH);
 
   // set initial to Normal
-  setState(9);
+  setState(sequence[sequenceNumber]);
 }
 void loop()
 {
@@ -65,15 +91,16 @@ void loop()
     // wait for button release
     while (digitalRead(buttonPin) == LOW)
     {
-      yield();
-      ESP.wdtFeed();
+      delay(10);
+      // yield();
+      // ESP.wdtFeed();
     }
     digitalWrite(ledPin, HIGH);
 
-    delay(50); // debounce
+    delay(80); // debounce
   }
   delay(10);
-  yield();
+  // yield();
 
-  ESP.wdtFeed();
+  // ESP.wdtFeed();
 }
