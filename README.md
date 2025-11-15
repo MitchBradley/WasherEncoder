@@ -10,12 +10,12 @@ This repo contains an ESP8266 (most any MCU would work) program that cycles thro
 
 It would be possible to use GPIOs to directly drive the ULN2003 inputs instead of going through the MCP23008 I2C chip, but I already had a board from an old project with that combo, so it was easier to use it as-is instead of rewiring.
 
-I tried using 2N7000 MOSFETs instead of relays, but that didn't work.  The ciruit on the washer control board does not ground the common pole of the switch, but rather modulates it in some funny way, so the MOSFETs did not do the job.  If I have to do it again (our dryer has the same kind of encoder), I might try to use CMOS transmission gates.
+I tried using 2N7000 MOSFETs instead of relays, but that didn't work.  The circuit on the washer control board does not ground the common pole of the switch, but rather modulates it in some funny way, so the MOSFETs did not do the job.  If I have to do it again (our dryer has the same kind of encoder), I might try to use CMOS transmission gates.
 
 I 3D printed a simple cap to replace the existing knob, with a hole in it for the pushbutton.
 
 The MCU and relay board are powered from the washer control board's 5V supply (conveniently labeled).  The extra current draw does not appear to cause problems.
 
-I used a D1 Mini ESP8266, but I think that an ESP-01 would have been enough (but cumbersome to program and debug), since it only needs 2 pins for I2C (repurpose Rx and Tx) and one for the pushbutton.
+I used a D1 Mini ESP8266, but I think that an ESP-01 would have been enough (alveit cumbersome to program and debug), since it only needs 2 pins for I2C (repurpose Rx and Tx) and one for the pushbutton.
 
 So far it is working.  The wife is happy because she successfully did a load of laundry.
